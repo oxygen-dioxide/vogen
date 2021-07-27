@@ -1,8 +1,8 @@
 # vogen
 [Github](https://github.com/oxygen-dioxide/vogen) | 
-[Gitee](https://gitee.com/oxygendioxide/vogen)
-[Gitlab](https://gitlab.com/oxygen-dioxide/vogen)
-[Bitbucket](https://bitbucket.org/oxygendioxide/vogen)
+[Gitee](https://gitee.com/oxygendioxide/vogen) | 
+[Gitlab](https://gitlab.com/oxygen-dioxide/vogen) | 
+[Bitbucket](https://bitbucket.org/oxygendioxide/vogen) 
 
 读写[vogen](https://github.com/aqtq314/Vogen.Client) .vog文件的python库
 
