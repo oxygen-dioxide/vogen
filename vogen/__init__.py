@@ -1,8 +1,16 @@
 __version__='0.0.1'
 
+import copy
 import json
+import math
 import zipfile
-from typing import List,Tuple,Dict,Union
+from typing import List,Tuple,Dict,Union,Optional
+
+try:
+    import numpy
+    hasnumpy=True
+except:
+    hasnumpy=False
 
 class Vognote():
     def __init__(self,
@@ -33,14 +41,26 @@ class Vogutt():
                  name:str="",
                  singerId:str="gloria",
                  romScheme:str="man",
-                 notes:List[Vognote]=[]):
+                 notes:List[Vognote]=[],
+                 f0:Optional[numpy.ndarray]=None):
         self.name=name
         self.singerId=singerId
         self.romScheme=romScheme
         self.notes=notes
+        self.f0=f0
     
+    def __add__(self,other):
+        #两个乐句相加可合并乐句
+        #self为上一乐句，other为下一乐句
+        return Vogutt(name=self.name,singerId=self.singerId,romScheme=self.romScheme,notes=self.notes.copy()+other.notes.copy())
+
+    def __radd__(self,other):
+        #为适配sum，规定：其他类型+Vogutt返回原Vogutt的副本
+        return copy.deepcopy(self)
+
     def dump(self)->dict:
         d=self.__dict__.copy()
+        d.pop("f0")
         d["notes"]=[i.dump() for i in self.notes]
         return d
 
@@ -83,6 +103,15 @@ class Vogfile():
         self.accomOffset=accomOffset
         self.utts=utts
 
+    def __add__(self,other):
+        result=copy.deepcopy(self)
+        result.utts+=other.utts
+        return result
+
+    def __radd__(self,other):
+        #为适配sum，规定：其他类型+Vogutt返回原Vogutt的副本
+        return copy.deepcopy(self)
+
     def dump(self)->dict:
         d=self.__dict__.copy()
         d["utts"]=[i.dump() for i in self.utts]
@@ -99,6 +128,13 @@ class Vogfile():
         self.utts=sum((i.autosplit() for i in self.utts),[])
         return self
 
+    def sort(self):
+        """
+        对工程文件中的乐句排序
+        """
+        self.utts.sort(key=lambda x:x.notes[0].on)
+        return self
+
 def parsefile(content:dict)->Vogfile:
     """
     将工程字典解析为Vogfile对象
@@ -108,9 +144,30 @@ def parsefile(content:dict)->Vogfile:
     vf.utts=[parseutt(i) for i in vf.utts]
     return vf
 
-def openvog(filename:str)->Vogfile:
+def parsef0(fp)->numpy.ndarray:
+    rawarray=numpy.frombuffer(fp,dtype=numpy.int)
+    octave=rawarray//8388608-130
+    #b=math.log2((rawarray%8388608)+8388608)*12-276.3763155
+    key=numpy.log2((rawarray%8388608)+8388608)*12-276.3763155
+    return (octave*12+key)*(rawarray!=0)
+
+def openvog(filename:str,loadf0:bool=True)->Vogfile:
     """
     打开vog文件，返回Vogfile对象
+    loadf0:是否加载音高线，默认为True（仅当loadf0=True且存在numpy库时加载）
     """
     with zipfile.ZipFile(filename, "r") as z:
-        return parsefile(json.loads(z.read("chart.json")))
+        znamelist=z.namelist()
+        vf=parsefile(json.loads(z.read("chart.json")))
+        uttdict={u.name:u for u in vf.utts}
+        if(hasnumpy and loadf0):
+            for i in uttdict:
+                if(i+".f0" in znamelist):
+                    uttdict[i].f0=parsef0(z.open(i+".f0").read())
+    return vf
+    
+#关于f0格式
+#np.fromfile("utt-0.f0",dtype=np.int)
+#以八度为单位，八度之间等差，差2**23
+#八度之内为等比，(x+1)%2**23的公比为2**(1/12)（十二平均律常数）
+#TODO:f0的时间单位
