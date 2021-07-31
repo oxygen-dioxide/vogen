@@ -1,10 +1,12 @@
-# vogen
+# PyVogen
 [Github](https://github.com/oxygen-dioxide/vogen) | 
 [Gitee](https://gitee.com/oxygendioxide/vogen) | 
 [Gitlab](https://gitlab.com/oxygen-dioxide/vogen) | 
 [Bitbucket](https://bitbucket.org/oxygendioxide/vogen) 
 
-读写[vogen](https://github.com/aqtq314/Vogen.Client) .vog文件的python库
+PyVogen是开源歌声合成引擎[Vogen](https://github.com/aqtq314/Vogen.Client)的python实现
+
+目前已实现.vog文件的读写功能。合成功能正在开发中。
 
 ## 安装
 暂未上架pypi，请自行下载，将vogen文件夹复制到python安装目录下的Lib文件夹下

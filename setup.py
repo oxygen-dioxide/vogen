@@ -14,20 +14,16 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'dvfile'
-DESCRIPTION = 'Read and write deepvocal dv file'
-URL = 'https://gitee.com/oxygendioxide/dvfile'
+NAME = 'vogen'
+DESCRIPTION = 'Read and write vogen vog file'
+URL = 'https://github.com/oxygen-dioxide/vogen'
 EMAIL = '1463567152@qq.com'    
 AUTHOR = 'oxygen dioxide'
 REQUIRES_PYTHON = '>=3.5.0' 
-VERSION = '0.2.0'
+VERSION = '0.0.1'
     
-REQUIRED = ["numpy"]    
-EXTRAS = {
-    "export midi":["mido"],
-    "export sheet":["music21","utaufile"],
-    "export ust and nn":["utaufile"]
-    }
+REQUIRED = []    
+EXTRAS = {}
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
@@ -111,13 +107,14 @@ setup(
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
-    license='Mulan',
+    license='MIT License',
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: Other/Proprietary License',
+        'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.6',
