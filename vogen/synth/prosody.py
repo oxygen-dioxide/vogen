@@ -12,7 +12,7 @@ models={"man":onnxruntime.InferenceSession(os.path.join(modelpath,"po.man.onnx")
 "yue":onnxruntime.InferenceSession(os.path.join(modelpath,"po.yue.onnx")),
 "yue-wz":onnxruntime.InferenceSession(os.path.join(modelpath,"po.yue.onnx"))}
 
-def uttDur(romScheme:str,uttDur:int,chars:List[timetable.TChar]):
+def run(romScheme:str,uttDur:int,chars:List[timetable.TChar]):
     roms=[i.rom for i in chars]
     chPhs=g2p.run(romScheme,roms)
     chPhs=[([None] if i==None else i)  for i in chPhs]
@@ -68,7 +68,7 @@ def main():
         t.TChar(ch="guang",rom="guang",notes=[t.TNote(pitch=62,on=75,off=100)],ipa=None),
         t.TChar(ch=None,rom=None,notes=None,ipa=None),
     ]
-    a=uttDur("man",150,chars)
+    a=run("man",150,chars)
     #print(a[2].ipa[3])
 
 if(__name__=="__main__"):

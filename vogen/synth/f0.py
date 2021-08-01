@@ -9,7 +9,7 @@ models={"man":onnxruntime.InferenceSession(os.path.join(modelpath,"f0.man.onnx")
 "yue":onnxruntime.InferenceSession(os.path.join(modelpath,"f0.yue.onnx")),
 "yue-wz":onnxruntime.InferenceSession(os.path.join(modelpath,"f0.yue.onnx"))}
 
-def run(romScheme:str,chars:List[timetable.TChar]):
+def run(romScheme:str,chars:List[timetable.TChar])->numpy.ndarray:
     phs=sum([ch.ipa for ch in chars],[])
     uttDur=chars[-1].ipa[-1].off
     noteOps:List[Optional[timetable.TNote]]=sum([([None] if ch.notes==None else ch.notes) for ch in chars],[])
@@ -21,7 +21,7 @@ def run(romScheme:str,chars:List[timetable.TChar]):
         elif(prevNote!=None):
             noteBounds.append(prevNote.off)
         else:
-            raise ArgumentException("Consecutive sil chars in %A")
+            pass#raise ArgumentException("Consecutive sil chars in %A")
     noteBounds.append(uttDur)
     phSyms=[]
     for ph in phs:
@@ -42,8 +42,7 @@ def run(romScheme:str,chars:List[timetable.TChar]):
         "phDurs":numpy.array(phDurs,dtype=numpy.int64)}
     #运行模型
     model=models[romScheme]
-    ys=model.run([model.get_outputs()[0].name],xs)[0]
-    f0=ys.tolist()
+    f0=model.run([model.get_outputs()[0].name],xs)[0]
     return f0
 
 def main():

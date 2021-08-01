@@ -20,17 +20,28 @@ class TPhoneme():
         self.off=off
 
 class TNote():
+    """
+    pitch:音高
+    on:开始时间，单位为0.25s，取整
+    off:结束时间，单位为0.25s，取整
+    """
     def __init__(self,pitch:int,on:int,off:int):
         self.pitch=pitch
         self.on=on
         self.off=off
 
 class TChar():
+    """
+    ch:汉字，对于空白为None
+    rom:拼音，对于空白为None
+    notes:音高列表
+    ipa:（待处理）音素列表
+    """
     def __init__(self,
-                ch:Optional[str],
-                rom:Optional[str],
-                notes:Optional[List[TNote]],
-                ipa:Optional[List[TPhoneme]]):
+                ch:Optional[str]=None,
+                rom:Optional[str]=None,
+                notes:Optional[List[TNote]]=None,
+                ipa:Optional[List[TPhoneme]]=None):
         self.ch=ch
         self.rom=rom
         self.notes=notes
