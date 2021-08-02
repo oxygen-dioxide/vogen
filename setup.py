@@ -15,14 +15,14 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data.
 NAME = 'vogen'
-DESCRIPTION = 'Read and write vogen vog file'
+DESCRIPTION = 'An AI based vocal synthesizer implemented in python and onnx, with a music21 interface'
 URL = 'https://github.com/oxygen-dioxide/vogen'
 EMAIL = '1463567152@qq.com'    
 AUTHOR = 'oxygen dioxide'
 REQUIRES_PYTHON = '>=3.5.0' 
 VERSION = '0.0.1'
     
-REQUIRED = []    
+REQUIRED = ["numpy","jyutping","pypinyin","onnxruntime","pyworld"]    
 EXTRAS = {}
 
 # The rest you shouldn't have to touch too much :)

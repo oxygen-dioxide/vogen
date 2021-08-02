@@ -60,7 +60,28 @@ def synth(file:vogen.Vogfile):
         #将合成出的音频加到音轨上
         uttoffset=int(params.fs*(utt.notes[0].on/(8*tempo)-0.5))
         trackwave[uttoffset:uttoffset+len(uttwave)]+=uttwave
-    return trackwave
+    
+    return (trackwave*(2**15 - 1)).astype(numpy.int16)
+
+def is_jupyter_notebook()->bool:
+    #检测是否为jupyter notebook
+    try:
+        get_ipython().__class__.__name__
+        #jupyter notebook
+        return True
+    except NameError:
+        #普通命令行
+        return False
+
+def play(file:vogen.Vogfile):
+    a=synth(file)
+    if(is_jupyter_notebook()):
+        from IPython.display import Audio
+        return Audio(data=a, rate=params.fs)
+    else:
+        import simpleaudio as sa
+        sa.play_buffer(audio,1,2,params.fs)
+        
 
 #测试
 def main():

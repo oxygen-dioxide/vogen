@@ -4,6 +4,8 @@ import copy
 import json
 import math
 import zipfile
+import jyutping
+import pypinyin
 from typing import List,Tuple,Dict,Union,Optional
 
 try:
@@ -13,6 +15,14 @@ except:
     hasnumpy=False
 
 class Vognote():
+    """
+    Vogen音符对象
+    pitch：音高，C4=60
+    lyric：歌词汉字
+    rom：歌词拼音
+    on：开始时间，1拍=480
+    dur：时长，1拍=480
+    """
     def __init__(self,
                  pitch:int=60,
                  lyric:str="",
@@ -24,7 +34,10 @@ class Vognote():
         self.rom=rom
         self.on=on
         self.dur=dur
-    
+
+    def __str__(self):
+        return "  Vognote {} {}[{}] {} {}\n".format(self.pitch,self.lyric,self.rom,self.on,self.dur)
+
     def dump(self)->dict:
         return self.__dict__
 
@@ -37,6 +50,14 @@ def parsenote(content:dict)->Vognote:
     return vn
 
 class Vogutt():
+    """
+    Vogen乐句对象
+    name：名称
+    singerId：歌手
+    romScheme：语种（man：中文普通话，yue：粤语）
+    notes：音符列表
+    f0：音高线（不支持写入文件）
+    """
     def __init__(self,
                  name:str="",
                  singerId:str="gloria",
@@ -57,6 +78,9 @@ class Vogutt():
     def __radd__(self,other):
         #为适配sum，规定：其他类型+Vogutt返回原Vogutt的副本
         return copy.deepcopy(self)
+
+    def __str__(self):
+        return " Vogutt {} {} {}\n".format(self.name,self.singerId,self.romScheme)+"".join(str(n) for n in self.notes)
 
     def dump(self)->dict:
         d=self.__dict__.copy()
@@ -82,7 +106,71 @@ class Vogutt():
                 result[-1].notes.append(n)
                 time=n.on+n.dur
             return result
-        
+
+    def offset(self,offset:int=0):
+        """将utt中的音符全部左右移动offset个单位"""
+        for note in self.notes:
+            note.on+=offset
+        return self
+
+    def sort(self):
+        """
+        对乐句中的音符排序
+        """
+        self.notes.sort(key=lambda x:x.on)
+        return self
+    
+    def lyrictorom(self):
+        """
+        从歌词汉字生成拼音
+        """
+        hanzis=""
+        hanzinotes=[]
+        for note in self.notes:
+            if(len(note.lyric)==1 and '\u4e00'<=note.lyric<='\u9fff'):
+                hanzis+=note.lyric
+                hanzinotes.append(note)
+            else:
+                note.rom=note.lyric
+        if(self.romScheme=="man"):#普通话
+            pinyins=pypinyin.lazy_pinyin(hanzis)
+        elif(self.romScheme.startswith("yue")):#粤语
+            pinyins=(i[:,-1] for i in jyutping.get(note))
+        for (note,pinyin) in zip(hanzinotes,pinyins):
+            note.rom=pinyin
+        return self
+
+def music21_stream_to_vog_utt(st)->Vogutt:
+    import music21
+    vognote=[]
+    for note in st.flat.getElementsByClass(music21.note.Note):
+        if(note.lyric in (None,"")):#连音符在music21中没有歌词
+            lyric="-"
+        else:
+            lyric=note.lyric
+        vognote.append(Vognote(on=int(note.offset*480),
+                             dur=int(note.duration.quarterLength*480),
+                             pitch=note.pitch.midi,
+                             lyric=lyric,
+                             rom=lyric))
+                             #TODO:汉字转拼音
+    return Vogutt(notes=vognote)
+
+def to_vog_utt(a)->Vogutt:
+    """
+    将其他类型的音轨工程对象a转为vogen utt对象
+    """
+    type_name=type(a).__name__
+    #从对象类型到所调用函数的字典
+    type_function_dict={
+        "Vogutt":copy.deepcopy,
+        "Stream":music21_stream_to_vog_utt,#Music21普通序列对象
+        "Measure":music21_stream_to_dv_segment,#Music21小节对象
+        "Part":music21_stream_to_dv_segment,#Music21多轨中的单轨对象
+    }
+    #如果在这个字典中没有找到函数，则默认调用a.to_vog_utt()
+    return type_function_dict.get(type_name,lambda x:x.to_vog_file())(a)
+
 def parseutt(content:dict):
     """
     将乐句字典解析为Vogutt对象
@@ -112,6 +200,9 @@ class Vogfile():
         #为适配sum，规定：其他类型+Vogutt返回原Vogutt的副本
         return copy.deepcopy(self)
 
+    def __str__(self):
+        return "Vogfile {} {}\n".format(self.timeSig0,self.bpm0)+"".join(str(utt) for utt in self.utts)
+
     def dump(self)->dict:
         d=self.__dict__.copy()
         d["utts"]=[i.dump() for i in self.utts]
@@ -128,12 +219,68 @@ class Vogfile():
         self.utts=sum((i.autosplit() for i in self.utts),[])
         return self
 
+    def sortnote(self):
+        for utt in self.utts:
+            utt.sort()
+        return self
+
     def sort(self):
         """
         对工程文件中的乐句排序
         """
+        self.sortnote()
         self.utts.sort(key=lambda x:x.notes[0].on)
         return self
+
+    def setSingerId(self,singerId:str):
+        """
+        为工程中的所有乐句设置歌手
+        """
+        for utt in self.utts:
+            utt.singerId=singerId
+        return self
+
+    def setRomScheme(self,romScheme:str):
+        """
+        为工程中的所有乐句设置语种
+        """
+        for utt in self.utts:
+            utt.romScheme=romScheme
+        return self
+
+    def lyrictorom(self):
+        for utt in self.utts:
+            utt.lyrictorom()
+        return self
+
+def music21_stream_to_vog_file(st):
+    import music21
+    vf=Vogfile(utts=[music21_stream_to_vog_utt(st)]).autosplit()
+    #节拍
+    b=list(st.getElementsByClass(music21.meter.TimeSignature))
+    if(len(b)>0):
+        b=b[0]
+        vf.timeSig0=("{}/{}".format(b.numerator,b.denominator))
+    #曲速
+    t=list(st.getElementsByClass(music21.tempo.MetronomeMark))
+    if(len(t))>0:
+        vf.bpm0=t[0].number
+    return vf
+
+def to_vog_file(a)->Vogfile:
+    """
+    将其他类型的音轨工程对象a转为vogen工程对象
+    """
+    type_name=type(a).__name__
+    #从对象类型到所调用函数的字典
+    type_function_dict={
+        "Vogfile":copy.deepcopy,
+        "Stream":music21_stream_to_vog_file,#Music21普通序列对象
+        "Measure":music21_stream_to_vog_file,#Music21小节对象
+        "Part":music21_stream_to_vog_file,#Music21多轨中的单轨对象
+    }
+    #如果在这个字典中没有找到函数，则默认调用a.to_vog_file()
+    return type_function_dict.get(type_name,lambda x:x.to_vog_file())(a)
 
 def parsefile(content:dict)->Vogfile:
     """

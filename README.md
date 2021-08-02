@@ -6,12 +6,21 @@
 
 PyVogen是开源歌声合成引擎[Vogen](https://github.com/aqtq314/Vogen.Client)的python实现
 
-目前已实现.vog文件的读写功能。合成功能正在开发中。
+本python库依赖以下库：
+
+[numpy](https://numpy.org/) 
+[jyutping](https://github.com/imdreamrunner/python-jyutping)
+[pypinyin](https://pypinyin.readthedocs.io/zh_CN/master/)
+[onnxruntime](https://www.onnxruntime.ai/)
+[pyworld](https://github.com/JeremyCCHsu/Python-Wrapper-for-World-Vocoder)
 
 ## 安装
 暂未上架pypi，请自行下载，将vogen文件夹复制到python安装目录下的Lib文件夹下
 
 ## 示例
+
+以下是文件读写示例，音频合成等更多示例参见[示例列表](.\examples)
+
 ```py
 import vogen as vg
 
