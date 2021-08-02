@@ -19,7 +19,7 @@ PyVogen是开源歌声合成引擎[Vogen](https://github.com/aqtq314/Vogen.Clien
 
 ## 示例
 
-以下是文件读写示例，音频合成等更多示例参见[示例列表](.\examples)
+以下是文件读写示例，音频合成等更多示例参见[文档](.\docs)
 
 ```py
 import vogen as vg

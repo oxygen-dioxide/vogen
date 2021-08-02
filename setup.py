@@ -20,7 +20,7 @@ URL = 'https://github.com/oxygen-dioxide/vogen'
 EMAIL = '1463567152@qq.com'    
 AUTHOR = 'oxygen dioxide'
 REQUIRES_PYTHON = '>=3.5.0' 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
     
 REQUIRED = ["numpy","jyutping","pypinyin","onnxruntime","pyworld"]    
 EXTRAS = {}
@@ -77,7 +77,7 @@ class UploadCommand(Command):
         os.system('{0} setup.py sdist bdist_wheel --universal'.format(sys.executable))
 
         self.status('Uploading the package to PyPI via Twine…')
-        os.system('twine upload dist/*')
+        os.system('py -m twine upload dist/*')
 
         self.status('Pushing git tags…')
         os.system('git tag v{0}'.format(about['__version__']))
@@ -101,9 +101,9 @@ setup(
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 
-    # entry_points={
-    #     'console_scripts': ['mycli=mymodule:cli'],
-    # },
+    entry_points={
+        'console_scripts': ['pyvogen=vogen:main'],
+    },
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
