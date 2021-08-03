@@ -2,7 +2,8 @@
 [Github](https://github.com/oxygen-dioxide/vogen) | 
 [Gitee](https://gitee.com/oxygendioxide/vogen) | 
 [Gitlab](https://gitlab.com/oxygen-dioxide/vogen) | 
-[Bitbucket](https://bitbucket.org/oxygendioxide/vogen) 
+[Bitbucket](https://bitbucket.org/oxygendioxide/vogen) |
+[Coding](https://oxygen-dioxide.coding.net/public/1/vogen/git/files)
 
 PyVogen是开源歌声合成引擎[Vogen](https://github.com/aqtq314/Vogen.Client)的python实现
 
