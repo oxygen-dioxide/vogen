@@ -8,6 +8,7 @@ pkgroot=os.path.join(os.path.split(os.path.realpath(__file__))[0],"libs")
 modelmanager=utils.ModelManager(os.path.join(pkgroot,"{}","model.onnx"))
 
 def run(romScheme:str,voiceLibId:str,f0:numpy.ndarray,chars:List[timetable.TChar])->List[numpy.ndarray]:
+    voiceLibId=voiceLibId.lower()
     phs:List[timetable.TPhoneme]=sum([ch.ipa for ch in chars],[])
     phDurs=[ph.off-ph.on for ph in phs]
     phSyms=[]

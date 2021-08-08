@@ -102,7 +102,7 @@ setup(
     # py_modules=['mypackage'],
 
     entry_points={
-        'console_scripts': ['pyvogen=vogen:main'],
+        'console_scripts': ['pyvogen=vogen.__main__:main'],
     },
     install_requires=REQUIRED,
     extras_require=EXTRAS,
