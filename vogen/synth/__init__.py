@@ -82,13 +82,13 @@ def play(file:vogen.Vogfile):
         return Audio(data=a, rate=params.fs)
     else:
         import simpleaudio as sa
-        sa.play_buffer(audio,1,2,params.fs)
+        sa.play_buffer(a,1,2,params.fs)
         
 
 #测试
 def main():
     global a
-    a=synth(vogen.openvog(r"C:\users\lin\desktop\2.vog"))
+    a=synth(vogen.openvog(r"C:\users\lin\desktop\3.vog"))
     #print(a)
     #from myplot import plot
     #plot(a)
@@ -101,10 +101,9 @@ def main():
     #sa.play_buffer(audio,1,2,44100)
     
     #导出音频
-    #import 
-    #import numpy as np
-    #audio =(a*(2**15 - 1)/np.max(np.abs(a))).astype(np.int16)
-    #wavio.write(r"C:\users\lin\desktop\2.wav",audio,44100)
+    import wavio
+    import numpy as np
+    wavio.write(r"C:\users\lin\desktop\3.wav",a,44100)
 
 if(__name__=="__main__"):
     main()

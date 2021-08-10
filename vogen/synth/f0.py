@@ -1,6 +1,7 @@
 import os
 import numpy
 import onnxruntime
+import more_itertools
 from typing import List,Optional
 from vogen.synth import timetable
 
@@ -15,7 +16,7 @@ def run(romScheme:str,chars:List[timetable.TChar])->numpy.ndarray:
     noteOps:List[Optional[timetable.TNote]]=sum([([None] if ch.notes==None else ch.notes) for ch in chars],[])
     #print([None if n==None else n.__dict__ for n in noteOps])
     noteBounds=[0]
-    for (prevNote,note) in zip(noteOps[:-1],noteOps[1:]):
+    for (prevNote,note) in more_itertools.pairwise(noteOps):
         if(note!=None):
             noteBounds.append(note.on)
         elif(prevNote!=None):
@@ -32,7 +33,7 @@ def run(romScheme:str,chars:List[timetable.TChar])->numpy.ndarray:
         else:
             phSyms.append(romScheme+":"+ph.ph)
     notePitches=[0.0 if note==None else note.pitch for note in noteOps]
-    noteDurs=[(t1-t0) for (t0,t1) in zip(noteBounds[:-1],noteBounds[1:])]
+    noteDurs=[(t1-t0) for (t0,t1) in more_itertools.pairwise(noteBounds)]
     noteToCharIndex=list(range(len(noteOps)))
     phDurs=[ph.off-ph.on for ph in phs]
     xs={"phs":numpy.array(phSyms),

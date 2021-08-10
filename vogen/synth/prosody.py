@@ -3,6 +3,7 @@ import copy
 import numpy
 import datetime
 import onnxruntime
+import more_itertools
 from typing import List
 from vogen.synth import g2p
 from vogen.synth import timetable
@@ -28,14 +29,14 @@ def run(romScheme:str,uttDur:int,chars:List[timetable.TChar]):
     #print(phs)
     chPhCounts=[len(i) for i in chPhs]
     noteBounds=[0]
-    for (ch0,ch1) in zip(chars[:-1],chars[1:]):
+    for (ch0,ch1) in more_itertools.pairwise(chars):
         if ch1.notes!=None:
             noteBounds.append(ch1.notes[0].on)
         else:
             noteBounds.append(ch0.notes[-1].off)
     noteBounds.append(uttDur)
     noteBoundsSec=[timetable.frameToTime(i).total_seconds() for i in noteBounds]
-    noteDursSec=[nt1-nt0 for (nt0,nt1) in zip(noteBoundsSec[:-1],noteBoundsSec[1:])]
+    noteDursSec=[nt1-nt0 for (nt0,nt1) in more_itertools.pairwise(noteBoundsSec)]
     xs={"phs":numpy.array(phs),"chPhCounts":numpy.array(chPhCounts,dtype=numpy.int64),"noteDursSec":numpy.array(noteDursSec,dtype=numpy.float32)}
     #print(xs)
     #运行模型
@@ -53,7 +54,7 @@ def run(romScheme:str,uttDur:int,chars:List[timetable.TChar]):
     for i in chPhCounts:
         chPhIndexBounds.append(chPhIndexBounds[-1]+i)
     
-    chPhBounds=[phBounds[startIndex:endIndex+1] for (startIndex, endIndex) in zip(chPhIndexBounds[:-1],chPhIndexBounds[1:])]
+    chPhBounds=[phBounds[startIndex:endIndex+1] for (startIndex, endIndex) in more_itertools.pairwise(chPhIndexBounds)]
     #print(chPhBounds)
     outChars=copy.deepcopy(chars)
     for (char,phs,phBounds) in zip(outChars,chPhs,chPhBounds):
