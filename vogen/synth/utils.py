@@ -1,3 +1,4 @@
+"""常量及通用功能代码"""
 import datetime
 import onnxruntime
 from typing import Dict

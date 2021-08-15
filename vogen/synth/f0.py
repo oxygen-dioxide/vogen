@@ -1,3 +1,4 @@
+"""基频模型相关"""
 import os
 import numpy
 import onnxruntime

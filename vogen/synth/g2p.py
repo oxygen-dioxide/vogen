@@ -1,3 +1,4 @@
+"""拼音转音素"""
 import os
 import numpy
 import onnxruntime

@@ -1,3 +1,4 @@
+"""确定音素时长"""
 import os
 import copy
 import numpy

@@ -1,3 +1,4 @@
+"""人声模型相关"""
 import os
 import numpy
 import onnxruntime
@@ -24,8 +25,8 @@ def run(romScheme:str,voiceLibId:str,f0:numpy.ndarray,chars:List[timetable.TChar
         "phs":numpy.array([phSyms]),
         "f0":numpy.array([f0],dtype=numpy.float32),
         "breAmp":breAmp}
-
-    pkgpath=os.path.join(pkgroot,voiceLibId)
+    #载入音源
     model=modelmanager.get(voiceLibId)
-    return model.run([model.get_outputs()[0].name,model.get_outputs()[1].name],xs)
+    result=model.run([model.get_outputs()[0].name,model.get_outputs()[1].name],xs)
+    return result
     #mgc,bap

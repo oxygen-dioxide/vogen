@@ -1,15 +1,13 @@
+"""vogen.synth基础类库"""
 import datetime
 from vogen.synth import utils
 from typing import List,Optional
 
-#TODO
+
 def timeToFrame(timeSpan:datetime.timedelta)->float:
     return timeSpan/utils.Params.hopSize
 def frameToTime(frames:float)->datetime.timedelta:
     return frames*utils.Params.hopSize
-
-#let timeToFrame(timeSpan : TimeSpan) = timeSpan / hopSize
-#let frameToTime(frames : float) = frames * hopSize
 
 import json
 

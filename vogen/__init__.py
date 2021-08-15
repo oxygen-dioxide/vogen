@@ -6,6 +6,8 @@ import math
 import zipfile
 import jyutping
 import pypinyin
+import more_itertools
+from vogen import config
 from typing import List,Tuple,Dict,Union,Optional
 
 try:
@@ -38,6 +40,8 @@ class Vognote():
     def __str__(self):
         return "  Vognote {} {}[{}] {} {}\n".format(self.pitch,self.lyric,self.rom,self.on,self.dur)
 
+    __repr__=__str__
+
     def dump(self)->dict:
         return self.__dict__
 
@@ -60,7 +64,7 @@ class Vogutt():
     """
     def __init__(self,
                  name:str="",
-                 singerId:str="gloria",
+                 singerId:str=config.config["DefaultSinger"],
                  romScheme:str="man",
                  notes:List[Vognote]=[],
                  f0:Optional[numpy.ndarray]=None):
@@ -79,8 +83,34 @@ class Vogutt():
         #为适配sum，规定：其他类型+Vogutt返回原Vogutt的副本
         return copy.deepcopy(self)
 
-    def __str__(self):
+    def __str__(self)->str:
         return " Vogutt {} {} {}\n".format(self.name,self.singerId,self.romScheme)+"".join(str(n) for n in self.notes)
+
+    __repr__=__str__
+
+    def __len__(self)->int:
+        """
+        获取乐句中的音符数量
+        """
+        return len(self.notes)
+    
+    def __getitem__(self,key)->Vognote:
+        if(type(key)==slice):#如果是切片类型，则返回切片后的Vogutt对象
+            return Vogutt(name=self.name,singerId=self.singerId,romScheme=self.romScheme,notes=self.notes[key])
+        else:#如果key是整数，则返回音符
+            return self.notes[key]
+
+    def __setitem__(self,key,value):
+        self.notes[key]=value
+    
+    def __delitem__(self,key):
+        self.notes.__delitem__(key)
+    
+    def __iter__(self):
+        return iter(self.notes)
+
+    def __reversed__(self):
+        return reversed(self.notes)
 
     def dump(self)->dict:
         d=self.__dict__.copy()
@@ -88,24 +118,12 @@ class Vogutt():
         d["notes"]=[i.dump() for i in self.notes]
         return d
 
-    def autosplit(self,r:int=0)->list:
+    def autosplit(self,r:int=80)->list:
         """
         自动拆分乐句，两个音符间隙大于r则拆分，返回拆分后的乐句列表
         """
-        if(len(self.notes)<2):
-            return [self]
-        else:
-            result=[]
-            def newutt():
-                result.append(Vogutt(name=self.name,singerId=self.singerId,romScheme=self.romScheme,notes=[]))
-            newutt()
-            time=self.notes[0].on
-            for n in self.notes:
-                if(n.on-time>r):
-                    newutt()
-                result[-1].notes.append(n)
-                time=n.on+n.dur
-            return result
+        indexs=[None]+[i+1 for (i,(note,nextnote)) in enumerate(more_itertools.pairwise(self)) if (note.on+note.dur+r<nextnote.on)]+[None]
+        return [self[i:nexti] for (i,nexti) in more_itertools.pairwise(indexs)]
 
     def offset(self,offset:int=0):
         """将utt中的音符全部左右移动offset个单位"""
@@ -165,8 +183,8 @@ def to_vog_utt(a)->Vogutt:
     type_function_dict={
         "Vogutt":copy.deepcopy,
         "Stream":music21_stream_to_vog_utt,#Music21普通序列对象
-        "Measure":music21_stream_to_dv_segment,#Music21小节对象
-        "Part":music21_stream_to_dv_segment,#Music21多轨中的单轨对象
+        "Measure":music21_stream_to_vog_utt,#Music21小节对象
+        "Part":music21_stream_to_vog_utt,#Music21多轨中的单轨对象
     }
     #如果在这个字典中没有找到函数，则默认调用a.to_vog_utt()
     return type_function_dict.get(type_name,lambda x:x.to_vog_file())(a)
@@ -202,6 +220,32 @@ class Vogfile():
 
     def __str__(self):
         return "Vogfile {} {}\n".format(self.timeSig0,self.bpm0)+"".join(str(utt) for utt in self.utts)
+
+    __repr__=__str__
+
+    def __len__(self)->int:
+        """
+        获取工程中的乐句数量
+        """
+        return len(self.utts)
+    
+    def __getitem__(self,key)->Vognote:
+        if(type(key)==slice):#如果是切片类型，则返回切片后的Vogutt对象
+            return Vogfile(timeSig0=self.timeSig0,bpm0=self.bpm0,accomOffset=self.accomOffset,utts=self.utts[key])
+        else:#如果key是整数，则返回乐句
+            return self.utts[key]
+
+    def __setitem__(self,key,value):
+        self.utts[key]=value
+    
+    def __delitem__(self,key):
+        self.utts.__delitem__(key)
+    
+    def __iter__(self):
+        return iter(self.utts)
+
+    def __reversed__(self):
+        return reversed(self.utts)
 
     def dump(self)->dict:
         d=self.__dict__.copy()
@@ -318,3 +362,10 @@ def openvog(filename:str,loadf0:bool=True)->Vogfile:
 #以八度为单位，八度之间等差，差2**23
 #八度之内为等比，(x+1)%2**23的公比为2**(1/12)（十二平均律常数）
 #TODO:f0的时间单位
+
+#调试
+def main():
+    openvog(r"C:\users\lin\desktop\shl.vog")
+
+if(__name__=="__main__"):
+    main()

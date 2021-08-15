@@ -53,6 +53,23 @@ def main():
 	parser_pm_uninstall.add_argument("id")
 	parser_pm_uninstall.set_defaults(func=pm_uninstall)
 	
+	#设置
+	def config(args):#输出当前设置
+		from vogen import config
+		from tabulate import tabulate
+		print(tabulate(config.config.items(),headers=["Key","Value"]))
+	parser_config=subparsers.add_parser("config",help="设置")
+	parser_config.set_defaults(func=config)
+	subparsers_config=parser_config.add_subparsers(help='')
+	#修改设置
+	def config_set(args):
+		from vogen import config
+		config.set(args.key,args.value)
+	parser_config_set=subparsers_config.add_parser("set",help="修改设置")
+	parser_config_set.set_defaults(func=config_set)
+	parser_config_set.add_argument('key',type=str)
+	parser_config_set.add_argument('value',type=str)
+
 	args = parser.parse_args()
 	print(args)
 	args.func(args)
