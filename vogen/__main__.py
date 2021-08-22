@@ -70,8 +70,36 @@ def main():
 	parser_config_set.add_argument('key',type=str)
 	parser_config_set.add_argument('value',type=str)
 
+	#合成
+	def synth(args):
+		import os
+		import wavio
+		from vogen import synth
+		from vogen.synth import utils
+		infile=args.infile
+		if(args.outfile==""):
+			outfile=infile[:-4]+".wav"
+		else:
+			outfile=args.outfile
+		#如果输出文件已存在
+		if(os.path.isfile(outfile)):
+			print(outfile+" 已存在，是否覆盖？\ny:覆盖并合成  n:保留并放弃合成")
+			instr=input()
+			while(len(instr)==0 or not(instr[0] in ("y","n","Y","N"))):
+				print("y:覆盖并合成 n:保留并放弃合成")
+				instr=input()
+			if(instr[0] in ("n","N")):
+				return
+		wavio.write(outfile,synth.synth(vogen.openvog(infile,False)),utils.Params.fs)
+		
+	parser_synth=subparsers.add_parser("synth",help="合成")
+	parser_synth.set_defaults(func=synth)
+	parser_synth.add_argument("infile",type=str,help="输入文件")
+	parser_synth.add_argument("outfile",type=str,nargs='?',default="",help="输出文件")
+	parser_synth.add_argument("-F,--force",action="store_true",help="强制覆盖现有文件")
+
 	args = parser.parse_args()
-	print(args)
+	#print(args)
 	args.func(args)
 
 if(__name__=="__main__"):

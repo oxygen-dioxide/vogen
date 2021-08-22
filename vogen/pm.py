@@ -31,10 +31,10 @@ def install_local(name:str,force:bool=False)->int:
             else:
                 print(pid+"已存在，是否删除？\ny:删除并继续安装  n:保留并放弃安装")
                 instr=input()
-                while(len(instr)==0 or not(instr[0] in ("y","n"))):
+                while(len(instr)==0 or not(instr[0] in ("y","n","Y","N"))):
                     print("y:删除并继续安装  n:保留并放弃安装")
                     instr=input()
-                if(instr[0]=="y"):
+                if(instr[0] in ("y","Y")):
                     shutil.rmtree(pkgpath)
                 else:
                     return -1

@@ -4,6 +4,7 @@
 import vogen
 import numpy
 import pyworld
+import tqdm
 from typing import List,Optional
 from vogen.synth import f0
 from vogen.synth import utils
@@ -57,9 +58,9 @@ def synth(file:vogen.Vogfile):
     nutt=len(file.utts)#utt的数量
     tracklen=max([utt.notes[-1].on+utt.notes[-1].dur for utt in file.utts])#以tick为单位的音轨总长度
     trackwave=numpy.zeros(int(params.fs*(tracklen/(8*tempo)+0.5)))
-    for i,utt in enumerate(file.utts):
+    for i,utt in enumerate(tqdm.tqdm(file.utts)):
         #显示进度
-        print("\r正在合成乐句{}/{}".format(i+1,nutt)+"#"*int(20*i/nutt)+"-"*(20-int(20*i/nutt)))
+        #print("\r正在合成乐句{}/{}".format(i+1,nutt)+"#"*int(20*i/nutt)+"-"*(20-int(20*i/nutt)))
         #合成
         uttwave=synthutt(utt,tempo)
         #将合成出的音频加到音轨上
