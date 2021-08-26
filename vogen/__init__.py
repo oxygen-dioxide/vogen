@@ -8,7 +8,7 @@ import jyutping
 import pypinyin
 import more_itertools
 from vogen import config
-from typing import List,Tuple,Dict,Union,Optional
+from typing import List,Tuple,Dict,Union,Optional,Any
 
 try:
     import numpy
@@ -113,6 +113,9 @@ class Vogutt():
         return reversed(self.notes)
 
     def dump(self)->dict:
+        """
+        将乐句对象转为vog文件中的字典形式
+        """
         d=self.__dict__.copy()
         d.pop("f0")
         d["notes"]=[i.dump() for i in self.notes]
@@ -158,6 +161,14 @@ class Vogutt():
             note.rom=pinyin
         return self
 
+    def synth(self,tempo:float):
+        """
+        合成乐句，以numpy数组形式返回音频
+        tempo:曲速
+        """
+        import vogen.synth
+        return vogen.synth.synthutt(self,tempo)
+
 def music21_stream_to_vog_utt(st)->Vogutt:
     import music21
     vognote=[]
@@ -199,6 +210,13 @@ def parseutt(content:dict):
     return vu
 
 class Vogfile():
+    """
+    vogen工程对象
+    timeSig0：节拍
+    bpm0：曲速
+    accomOffset：伴奏起点
+    utts：乐句列表
+    """
     def __init__(self,
                  timeSig0:str="4/4",
                  bpm0:float=120.0,
@@ -247,16 +265,26 @@ class Vogfile():
     def __reversed__(self):
         return reversed(self.utts)
 
+    def append(self,utt:Vogutt):
+        self.utts.append(utt)
+        return self
+
     def dump(self)->dict:
+        """
+        将乐句对象转为vog文件中的字典形式
+        """
         d=self.__dict__.copy()
         d["utts"]=[i.dump() for i in self.utts]
         return d
 
     def save(self,filename:str):
+        """
+        保存文件
+        """
         with zipfile.ZipFile(filename,"w") as z:
             z.writestr("chart.json",json.dumps(self.dump()))
 
-    def autosplit(self,r:int=0):
+    def autosplit(self,r:int=80):
         """
         自动拆分乐句，两个音符间隙大于r则拆分
         """
@@ -264,6 +292,9 @@ class Vogfile():
         return self
 
     def sortnote(self):
+        """
+        对工程中的每个乐句，分别对其中的音符排序
+        """
         for utt in self.utts:
             utt.sort()
         return self
@@ -276,9 +307,9 @@ class Vogfile():
         self.utts.sort(key=lambda x:x.notes[0].on)
         return self
 
-    def setSingerId(self,singerId:str):
+    def setSinger(self,singerId:str):
         """
-        为工程中的所有乐句设置歌手
+        为工程中的所有乐句统一设置歌手
         """
         for utt in self.utts:
             utt.singerId=singerId
@@ -286,16 +317,50 @@ class Vogfile():
 
     def setRomScheme(self,romScheme:str):
         """
-        为工程中的所有乐句设置语种
+        为工程中的所有乐句统一设置语种
         """
         for utt in self.utts:
             utt.romScheme=romScheme
         return self
 
     def lyrictorom(self):
+        """
+        从歌词生成拼音
+        """
         for utt in self.utts:
             utt.lyrictorom()
         return self
+
+    def synth(self):
+        """
+        合成工程，以numpy数组形式返回音频
+        """
+        import vogen.synth
+        return vogen.synth.synth(self)
+
+    def play(self):
+        """
+        合成工程并播放
+        """
+        import vogen.synth
+        return vogen.synth.play(self)
+
+    def separate_by_singer(self)->Dict[str,Any]:
+        """
+        根据歌手拆分工程，返回{音源名:对应的部分工程}字典
+        """
+        emptyfile=copy.copy(self)
+        emptyfile.utts=[]
+        result=dict()
+        for i in self:
+            result[i.singerId]=result.get(i.singerId,copy.copy(emptyfile)).append(i)
+        return result
+
+    def autoseparate(self)->list:
+        """
+        自动拆分工程为无音符重叠的音轨
+        """
+        pass#TODO
 
 def music21_stream_to_vog_file(st):
     import music21
@@ -336,6 +401,9 @@ def parsefile(content:dict)->Vogfile:
     return vf
 
 def parsef0(fp)->numpy.ndarray:
+    """
+    解析工程文件中的f0文件
+    """
     rawarray=numpy.frombuffer(fp,dtype=numpy.int)
     octave=rawarray//8388608-130
     #b=math.log2((rawarray%8388608)+8388608)*12-276.3763155

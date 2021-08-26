@@ -16,7 +16,7 @@ params=utils.Params()
 
 def synthutt(utt:vogen.Vogutt,tempo:float):
     """
-    合成单个乐句
+    合成单个乐句，以numpy数组形式返回
     """
     def ticktotime(tick:int)->int:
         #将480为一拍的tick转为0.01s为单位的时间
@@ -51,7 +51,7 @@ def synthutt(utt:vogen.Vogutt,tempo:float):
 
 def synth(file:vogen.Vogfile):
     """
-    从工程对象合成音频
+    从工程对象合成音频，以numpy数组形式返回
     """
     tempo=file.bpm0
     #以utt为单位合成

@@ -1,0 +1,14 @@
+{
+  "MainWidth": 1024,
+  "MainHeight": 768,
+  "MainMaximized": false,
+  "MidiMaximized": false,
+  "UndoLimit": 100,
+  "SingerSearchPaths": [
+    "Singers"
+  ],
+  "ExternalPreviewEngine": "",
+  "ExternalExportEngine": "",
+  "PlaybackDevice": null,
+  "PlaybackDeviceNumber": 0
+}

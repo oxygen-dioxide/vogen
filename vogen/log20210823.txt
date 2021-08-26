@@ -1,0 +1,11 @@
+﻿2021-08-23 22:48:13.709 +08:00 [INF] Assembly path = E:\Chocolatey\lib\openutau\tools\OpenUtau.exe
+2021-08-23 22:48:13.810 +08:00 [INF] Home path = E:\Chocolatey\lib\openutau\tools
+2021-08-23 22:48:14.945 +08:00 [INF] Publish notification Load project
+2021-08-23 22:48:54.959 +08:00 [ERR] failed to install
+System.ArgumentNullException: Value cannot be null.
+Parameter name: stream
+   at System.IO.StreamReader..ctor(Stream stream, Encoding encoding, Boolean detectEncodingFromByteOrderMarks, Int32 bufferSize, Boolean leaveOpen)
+   at System.IO.StreamReader..ctor(Stream stream, Encoding encoding)
+   at OpenUtau.Classic.VoicebankInstaller.LoadArchive(String path) in C:\projects\openutau\OpenUtau\Classic\VoicebankInstaller.cs:line 80
+   at System.Threading.Tasks.Task.Execute()
+2021-08-23 22:49:19.646 +08:00 [INF] Publish notification Singers changed.
