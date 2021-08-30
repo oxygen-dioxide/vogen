@@ -10,13 +10,21 @@ import more_itertools
 from vogen import config
 from typing import List,Tuple,Dict,Union,Optional,Any
 
+#导入numpy（可选）
 try:
     import numpy
     hasnumpy=True
-except:
+except ModuleNotFoundError:
     hasnumpy=False
-
-class Vognote():
+"""
+#导入vogen.synth（可选）
+try:
+    from vogen.synth import timetable
+    hassynth=True
+except ModuleNotFoundError:
+    hassynth=False
+"""
+class VogNote():
     """
     Vogen音符对象
     pitch：音高，C4=60
@@ -38,37 +46,34 @@ class Vognote():
         self.dur=dur
 
     def __str__(self):
-        return "  Vognote {} {}[{}] {} {}\n".format(self.pitch,self.lyric,self.rom,self.on,self.dur)
+        return "  VogNote {} {}[{}] {} {}\n".format(self.pitch,self.lyric,self.rom,self.on,self.dur)
 
     __repr__=__str__
 
     def dump(self)->dict:
         return self.__dict__
 
-def parsenote(content:dict)->Vognote:
+def parsenote(content:dict)->VogNote:
     """
-    将音符字典解析为Vognote对象
+    将音符字典解析为VogNote对象
     """
-    vn=Vognote()
+    vn=VogNote()
     vn.__dict__.update(content)
     return vn
 
-class Vogutt():
+class VogUtt():
     """
     Vogen乐句对象
-    name：名称
     singerId：歌手
-    romScheme：语种（man：中文普通话，yue：粤语）
+    romScheme：语种（man：中文普通话，yue：粤语，yue-wz：粤语梧州话）
     notes：音符列表
     f0：音高线（不支持写入文件）
     """
     def __init__(self,
-                 name:str="",
                  singerId:str=config.config["DefaultSinger"],
-                 romScheme:str="man",
-                 notes:List[Vognote]=[],
+                 romScheme:str=config.config["DefaultRomScheme"],
+                 notes:List[VogNote]=[],
                  f0:Optional[numpy.ndarray]=None):
-        self.name=name
         self.singerId=singerId
         self.romScheme=romScheme
         self.notes=notes
@@ -77,14 +82,14 @@ class Vogutt():
     def __add__(self,other):
         #两个乐句相加可合并乐句
         #self为上一乐句，other为下一乐句
-        return Vogutt(name=self.name,singerId=self.singerId,romScheme=self.romScheme,notes=self.notes.copy()+other.notes.copy())
+        return VogUtt(singerId=self.singerId,romScheme=self.romScheme,notes=self.notes.copy()+other.notes.copy())
 
     def __radd__(self,other):
-        #为适配sum，规定：其他类型+Vogutt返回原Vogutt的副本
+        #为适配sum，规定：其他类型+VogUtt返回原VogUtt的副本
         return copy.deepcopy(self)
 
     def __str__(self)->str:
-        return " Vogutt {} {} {}\n".format(self.name,self.singerId,self.romScheme)+"".join(str(n) for n in self.notes)
+        return " VogUtt {} {} \n".format(self.singerId,self.romScheme)+"".join(str(n) for n in self.notes)
 
     __repr__=__str__
 
@@ -94,9 +99,9 @@ class Vogutt():
         """
         return len(self.notes)
     
-    def __getitem__(self,key)->Vognote:
-        if(type(key)==slice):#如果是切片类型，则返回切片后的Vogutt对象
-            return Vogutt(name=self.name,singerId=self.singerId,romScheme=self.romScheme,notes=self.notes[key])
+    def __getitem__(self,key)->VogNote:
+        if(type(key)==slice):#如果是切片类型，则返回切片后的VogUtt对象
+            return VogUtt(singerId=self.singerId,romScheme=self.romScheme,notes=self.notes[key])
         else:#如果key是整数，则返回音符
             return self.notes[key]
 
@@ -169,7 +174,13 @@ class Vogutt():
         import vogen.synth
         return vogen.synth.synthutt(self,tempo)
 
-def music21_stream_to_vog_utt(st)->Vogutt:
+    def toVogUtt(self):
+        return copy.deepcopy(self)
+
+def music21StreamToVogUtt(st)->VogUtt:
+    """
+    将music21 stream对象转为vogen utt对象
+    """
     import music21
     vognote=[]
     for note in st.flat.getElementsByClass(music21.note.Note):
@@ -177,39 +188,53 @@ def music21_stream_to_vog_utt(st)->Vogutt:
             lyric="-"
         else:
             lyric=note.lyric
-        vognote.append(Vognote(on=int(note.offset*480),
+        vognote.append(VogNote(on=int(note.offset*480),
                              dur=int(note.duration.quarterLength*480),
                              pitch=note.pitch.midi,
                              lyric=lyric,
                              rom=lyric))
                              #TODO:汉字转拼音
-    return Vogutt(notes=vognote)
+    return VogUtt(notes=vognote)
 
-def to_vog_utt(a)->Vogutt:
+def utaupyUstToVogUtt(u)->VogUtt:
     """
-    将其他类型的音轨工程对象a转为vogen utt对象
+    将utaupy ust对象转为vogen utt对象
+    """
+    vognotes=[]
+    time=0
+    for un in u.notes:
+        notelen=int(un["Length"])
+        if(not(un.lyric in ("","R","r"))):
+            vognotes.append(VogNote(pitch=un["NoteNum"],lyric=un["Lyric"],rom=un["Lyric"],on=time,dur=notelen))
+        time+=notelen
+    return VogUtt(notes=vognotes)
+
+def toVogUtt(a)->VogUtt:
+    """
+    将其他类型的音轨工程对象转为vogen utt对象
     """
     type_name=type(a).__name__
     #从对象类型到所调用函数的字典
     type_function_dict={
-        "Vogutt":copy.deepcopy,
-        "Stream":music21_stream_to_vog_utt,#Music21普通序列对象
-        "Measure":music21_stream_to_vog_utt,#Music21小节对象
-        "Part":music21_stream_to_vog_utt,#Music21多轨中的单轨对象
+        "VogUtt":copy.deepcopy,
+        "Stream":music21StreamToVogUtt,#Music21普通序列对象
+        "Measure":music21StreamToVogUtt,#Music21小节对象
+        "Part":music21StreamToVogUtt,#Music21多轨中的单轨对象
+        "Ust":utaupyUstToVogUtt,#utaupy ust对象
     }
-    #如果在这个字典中没有找到函数，则默认调用a.to_vog_utt()
-    return type_function_dict.get(type_name,lambda x:x.to_vog_file())(a)
+    #如果在这个字典中没有找到函数，则默认调用a.toVogUtt()
+    return type_function_dict.get(type_name,lambda x:x.toVogFile())(a)
 
 def parseutt(content:dict):
     """
-    将乐句字典解析为Vogutt对象
+    将乐句字典解析为VogUtt对象
     """
-    vu=Vogutt()
+    vu=VogUtt()
     vu.__dict__.update(content)
     vu.notes=[parsenote(i) for i in vu.notes]
     return vu
 
-class Vogfile():
+class VogFile():
     """
     vogen工程对象
     timeSig0：节拍
@@ -221,7 +246,7 @@ class Vogfile():
                  timeSig0:str="4/4",
                  bpm0:float=120.0,
                  accomOffset:int=0,
-                 utts:List[Vogutt]=[]):
+                 utts:List[VogUtt]=[]):
         self.timeSig0=timeSig0
         self.bpm0=bpm0
         self.accomOffset=accomOffset
@@ -233,11 +258,11 @@ class Vogfile():
         return result
 
     def __radd__(self,other):
-        #为适配sum，规定：其他类型+Vogutt返回原Vogutt的副本
+        #为适配sum，规定：其他类型+VogUtt返回原VogUtt的副本
         return copy.deepcopy(self)
 
     def __str__(self):
-        return "Vogfile {} {}\n".format(self.timeSig0,self.bpm0)+"".join(str(utt) for utt in self.utts)
+        return "VogFile {} {}\n".format(self.timeSig0,self.bpm0)+"".join(str(utt) for utt in self.utts)
 
     __repr__=__str__
 
@@ -247,9 +272,9 @@ class Vogfile():
         """
         return len(self.utts)
     
-    def __getitem__(self,key)->Vognote:
-        if(type(key)==slice):#如果是切片类型，则返回切片后的Vogutt对象
-            return Vogfile(timeSig0=self.timeSig0,bpm0=self.bpm0,accomOffset=self.accomOffset,utts=self.utts[key])
+    def __getitem__(self,key)->VogNote:
+        if(type(key)==slice):#如果是切片类型，则返回切片后的VogUtt对象
+            return VogFile(timeSig0=self.timeSig0,bpm0=self.bpm0,accomOffset=self.accomOffset,utts=self.utts[key])
         else:#如果key是整数，则返回乐句
             return self.utts[key]
 
@@ -265,7 +290,7 @@ class Vogfile():
     def __reversed__(self):
         return reversed(self.utts)
 
-    def append(self,utt:Vogutt):
+    def append(self,utt:VogUtt):
         self.utts.append(utt)
         return self
 
@@ -275,6 +300,8 @@ class Vogfile():
         """
         d=self.__dict__.copy()
         d["utts"]=[i.dump() for i in self.utts]
+        for (i,utt) in enumerate(d["utts"]):
+            utt["name"]="utt-{}".format(i)
         return d
 
     def save(self,filename:str):
@@ -362,9 +389,15 @@ class Vogfile():
         """
         pass#TODO
 
-def music21_stream_to_vog_file(st):
+    def toVogFile(self):
+        return copy.deepcopy(self)
+
+def music21StreamToVogFile(st):
+    """
+    将music21 stream对象转为vogen工程对象
+    """
     import music21
-    vf=Vogfile(utts=[music21_stream_to_vog_utt(st)]).autosplit()
+    vf=VogFile(utts=[music21StreamToVogUtt(st)]).autosplit()
     #节拍
     b=list(st.getElementsByClass(music21.meter.TimeSignature))
     if(len(b)>0):
@@ -376,26 +409,33 @@ def music21_stream_to_vog_file(st):
         vf.bpm0=t[0].number
     return vf
 
-def to_vog_file(a)->Vogfile:
+def utaupyUstToVogFile(u)->VogFile:
+    """
+    将utaupy ust对象转为vogen工程对象
+    """
+    return VogFile(utts=[utaupyUstToVogUtt(u)],bpm0=float(u.tempo)).autosplit()
+
+def toVogFile(a)->VogFile:
     """
     将其他类型的音轨工程对象a转为vogen工程对象
     """
     type_name=type(a).__name__
     #从对象类型到所调用函数的字典
     type_function_dict={
-        "Vogfile":copy.deepcopy,
-        "Stream":music21_stream_to_vog_file,#Music21普通序列对象
-        "Measure":music21_stream_to_vog_file,#Music21小节对象
-        "Part":music21_stream_to_vog_file,#Music21多轨中的单轨对象
+        "VogFile":copy.deepcopy,
+        "Stream":music21StreamToVogFile,#Music21普通序列对象
+        "Measure":music21StreamToVogFile,#Music21小节对象
+        "Part":music21StreamToVogFile,#Music21多轨中的单轨对象
+        "Ust":utaupyUstToVogFile,#utaupy ust对象
     }
-    #如果在这个字典中没有找到函数，则默认调用a.to_vog_file()
-    return type_function_dict.get(type_name,lambda x:x.to_vog_file())(a)
+    #如果在这个字典中没有找到函数，则默认调用a.toVogFile()
+    return type_function_dict.get(type_name,lambda x:x.toVogFile())(a)
 
-def parsefile(content:dict)->Vogfile:
+def parsefile(content:dict)->VogFile:
     """
-    将工程字典解析为Vogfile对象
+    将工程字典解析为VogFile对象
     """
-    vf=Vogfile()
+    vf=VogFile()
     vf.__dict__.update(content)
     vf.utts=[parseutt(i) for i in vf.utts]
     return vf
@@ -410,19 +450,20 @@ def parsef0(fp)->numpy.ndarray:
     key=numpy.log2((rawarray%8388608)+8388608)*12-276.3763155
     return (octave*12+key)*(rawarray!=0)
 
-def openvog(filename:str,loadf0:bool=True)->Vogfile:
+def openvog(filename:str,loadf0:bool=True)->VogFile:
     """
-    打开vog文件，返回Vogfile对象
+    打开vog文件，返回VogFile对象
     loadf0:是否加载音高线，默认为True（仅当loadf0=True且存在numpy库时加载）
     """
     with zipfile.ZipFile(filename, "r") as z:
         znamelist=z.namelist()
         vf=parsefile(json.loads(z.read("chart.json")))
-        uttdict={u.name:u for u in vf.utts}
+        #uttdict={u.name:u for u in vf.utts}
+        #加载音高线
         if(hasnumpy and loadf0):
-            for i in uttdict:
-                if(i+".f0" in znamelist):
-                    uttdict[i].f0=parsef0(z.open(i+".f0").read())
+            for i in range(len(vf.utts)):
+                if("utt-{}.f0".format(i) in znamelist):
+                    vf.utts[i].f0=parsef0(z.open("utt-{}.f0".format(i)).read())
     return vf
     
 #关于f0格式

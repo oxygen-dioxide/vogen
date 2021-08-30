@@ -7,15 +7,16 @@ import json
 
 #设置项说明
 #DefaultSinger：默认的SingerId
-#UseWinml：使用winml运行onnx模型（仅限windows，需安装winrt库，重启生效）
+#DefaultRomScheme：默认语言
 
 #出厂默认设置
 defaultConfig={"DefaultSinger":"",
-               "UseWinml":False}
+               "DefaultRomScheme":"man",
+               }
 
 #各设置项的变量类型
 configtype={"DefaultSinger":str,
-            "UseWinml":bool}
+            "DefaultRomScheme":str}
 
 configPath=os.path.join(os.path.split(os.path.realpath(__file__))[0],"config.json")#设置文件路径
 

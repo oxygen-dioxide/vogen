@@ -1,10 +1,10 @@
 """PyVogen合成引擎"""
 #基于Vogen 7月28日代码
 
+import tqdm
 import vogen
 import numpy
 import pyworld
-import tqdm
 from typing import List,Optional
 from vogen.synth import f0
 from vogen.synth import utils
@@ -14,7 +14,7 @@ from vogen.synth import timetable
 
 params=utils.Params()
 
-def synthutt(utt:vogen.Vogutt,tempo:float):
+def synthutt(utt:vogen.VogUtt,tempo:float):
     """
     合成单个乐句，以numpy数组形式返回
     """
@@ -49,10 +49,12 @@ def synthutt(utt:vogen.Vogutt,tempo:float):
     #print("pyworld用时：",end-start)###
     return result
 
-def synth(file:vogen.Vogfile):
+def synth(file:vogen.VogFile):
     """
     从工程对象合成音频，以numpy数组形式返回
     """
+    if(type(file)!=vogen.VogFile):
+        file=vogen.toVogFile(file)
     tempo=file.bpm0
     #以utt为单位合成
     nutt=len(file.utts)#utt的数量
@@ -69,7 +71,7 @@ def synth(file:vogen.Vogfile):
     
     return (trackwave*(2**15 - 1)).astype(numpy.int16)
 
-def synth_multithread(file:vogen.Vogfile):
+def synth_multithread(file:vogen.VogFile):
     """
     实验性的多线程合成，节省不了多少时间，暂时不会维护，请勿使用
     """
@@ -111,7 +113,7 @@ def is_jupyter_notebook()->bool:
         #普通命令行
         return False
 
-def play(file:vogen.Vogfile):
+def play(file:vogen.VogFile):
     """
     从工程对象合成音频并播放
     """

@@ -12,7 +12,12 @@ def frameToTime(frames:float)->datetime.timedelta:
 import json
 
 class TPhoneme():
-    def __init__(self,ph:str,on:int,off:int):
+    """
+    ph:音素名称
+    on:开始时间，单位为0.25s，取整
+    off:结束时间，单位为0.25s，取整
+    """
+    def __init__(self,ph:str="",on:int=0,off:int=0):
         self.ph=ph
         self.on=on
         self.off=off
@@ -23,7 +28,7 @@ class TNote():
     on:开始时间，单位为0.25s，取整
     off:结束时间，单位为0.25s，取整
     """
-    def __init__(self,pitch:int,on:int,off:int):
+    def __init__(self,pitch:int="",on:int=0,off:int=0):
         self.pitch=pitch
         self.on=on
         self.off=off
@@ -46,7 +51,7 @@ class TChar():
         self.ipa=ipa 
        
 class TUtt():
-    def __init__(self,uttStartSec:float,uttDur:int,romScheme:str,chars:List[TChar]):
+    def __init__(self,uttStartSec:float=0.0,uttDur:int=0,romScheme:str="",chars:List[TChar]=[]):
         self.uttStartSec=uttStartSec
         self.uttDur=uttDur
         self.romScheme=romScheme
