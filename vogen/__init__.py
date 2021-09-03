@@ -9,6 +9,7 @@ import pypinyin
 import more_itertools
 from vogen import config
 from typing import List,Tuple,Dict,Union,Optional,Any
+from collections.abc import Callable
 
 #导入numpy（可选）
 try:
@@ -177,6 +178,18 @@ class VogUtt():
     def toVogUtt(self):
         return copy.deepcopy(self)
 
+    def autojoinnote(self):
+        """
+        从musicxml或其他五线谱等价格式导入时，跨小节音符会被拆分为连音符，本函数将被拆分的音符恢复
+        具体机制：连在一起的同音高连音符会被合并
+        """
+        length=len(self)
+        for (i,(nextnote,note)) in enumerate(more_itertools.pairwise(reversed(self.notes))):
+            if (nextnote.rom=="-" and note.pitch==nextnote.pitch and note.on+note.dur>=nextnote.on):
+                note.dur=nextnote.on+nextnote.dur-note.on
+                del self.notes[length-i-1]
+        return self
+
 def music21StreamToVogUtt(st)->VogUtt:
     """
     将music21 stream对象转为vogen utt对象
@@ -207,6 +220,33 @@ def utaupyUstToVogUtt(u)->VogUtt:
         if(not(un.lyric in ("","R","r"))):
             vognotes.append(VogNote(pitch=un["NoteNum"],lyric=un["Lyric"],rom=un["Lyric"],on=time,dur=notelen))
         time+=notelen
+    return VogUtt(notes=vognotes)
+
+def midoMidiTrackToVogUtt(mt)->VogUtt:
+    """
+    将mido miditrack对象转为vogen utt对象
+    """
+    tick=0
+    lyric=""
+    note:Dict[int,Tuple[str,int]]={}#音符注册表 {音高:(歌词,开始时间)}
+    vognotes=[]
+    for signal in mt:
+        tick+=signal.time
+        if(signal.type=="note_on"):
+            #将新音符注册到键位-音符字典中
+            note[signal.note]=(lyric,tick)
+        elif(signal.type=="note_off"):
+            #从键位-音符字典中找到音符，并弹出
+            if(signal.note in note):
+                n=note.pop(signal.note)
+                vognotes.append(VogNote(on=n[1],
+                            dur=tick-n[1],
+                            pitch=signal.note,
+                            lyric=n[0],
+                            rom=n[0]))
+        elif(signal.type=="lyrics"):
+            lyric=signal.text
+    #return Dvsegment(start=7680,length=int(tick*480/ticks_per_beat),note=dvnote,name=mtr.name)
     return VogUtt(notes=vognotes)
 
 def toVogUtt(a)->VogUtt:
@@ -383,18 +423,18 @@ class VogFile():
             result[i.singerId]=result.get(i.singerId,copy.copy(emptyfile)).append(i)
         return result
 
-    def autoseparate(self)->list:
-        """
-        自动拆分工程为无音符重叠的音轨
-        """
-        pass#TODO
+    def autojoinnote(self):
+        for utt in self:
+            utt.autojoinnote()
+        return self
 
     def toVogFile(self):
         return copy.deepcopy(self)
 
-def music21StreamToVogFile(st):
+def music21StreamToVogFile(st)->VogFile:
     """
     将music21 stream对象转为vogen工程对象
+    注意：输入的music21 Stream对象不能有音符重叠
     """
     import music21
     vf=VogFile(utts=[music21StreamToVogUtt(st)]).autosplit()
@@ -409,11 +449,31 @@ def music21StreamToVogFile(st):
         vf.bpm0=t[0].number
     return vf
 
+def music21ScoreToVogFile(sc)->VogFile:
+    """
+    将music21 score对象转为vogen工程对象
+    注意：输入的music21 score对象中，音轨内不能有音符重叠
+    """
+    return sum([music21StreamToVogFile(part) for part in sc.parts]).sort()
+    
 def utaupyUstToVogFile(u)->VogFile:
     """
     将utaupy ust对象转为vogen工程对象
     """
     return VogFile(utts=[utaupyUstToVogUtt(u)],bpm0=float(u.tempo)).autosplit()
+
+def midoMidiTrackToVogFile(mt)->VogFile:
+    vu=midoMidiTrackToVogUtt(mt)
+    if(len(vu)>0):
+        utts=[vu]
+    else:
+        utts=[]
+    return VogFile(utts=utts).autosplit()
+    #TODO:tempo
+
+def midoMidiFileToVogFile(mf)->VogFile:
+    return sum([midoMidiTrackToVogFile(tr) for tr in mf.tracks]).sort()
+    #TODO:tempo
 
 def toVogFile(a)->VogFile:
     """
@@ -426,6 +486,7 @@ def toVogFile(a)->VogFile:
         "Stream":music21StreamToVogFile,#Music21普通序列对象
         "Measure":music21StreamToVogFile,#Music21小节对象
         "Part":music21StreamToVogFile,#Music21多轨中的单轨对象
+        "Score":music21ScoreToVogFile,#Music21多轨工程对象
         "Ust":utaupyUstToVogFile,#utaupy ust对象
     }
     #如果在这个字典中没有找到函数，则默认调用a.toVogFile()
@@ -466,6 +527,45 @@ def openvog(filename:str,loadf0:bool=True)->VogFile:
                     vf.utts[i].f0=parsef0(z.open("utt-{}.f0".format(i)).read())
     return vf
     
+def loadfile_ust(filename:str)->VogFile:
+    """
+    读入ust文件，并转为VogFile对象
+    """
+    import utaupy
+    return toVogFile(utaupy.ust.load(filename))
+
+def loadfile_music21(filename:str)->VogFile:
+    """
+    读入music21支持的文件，并转为VogFile对象
+    """
+    import music21
+    return music21ScoreToVogFile(music21.converter.parse(filename))
+    
+def loadfile_musicxml(filename:str)->VogFile:
+    """
+    读入musicxml文件，并转为VogFile对象
+    """
+    return loadfile_music21(filename).autojoinnote()
+
+def loadfile_mid(filename:str)->VogFile:
+    import mido
+    return midoMidiFileToVogFile(mido.MidiFile(filename))
+
+def loadfile(filename:str)->VogFile:
+    """
+    读入文件，并转为VogFile对象
+    支持的文件类型：vog,ust,musicxml,mid
+    """
+    filetype=filename.split(".")[-1].lower()
+    fileparsers:Dict[str,Callable[[str],VogFile]]={
+            "vog":openvog,
+            "ust":loadfile_ust,
+            "musicxml":loadfile_musicxml,
+            "mxl":loadfile_musicxml,
+            "mid":loadfile_mid,
+            }
+    return fileparsers[filetype](filename)
+
 #关于f0格式
 #np.fromfile("utt-0.f0",dtype=np.int)
 #以八度为单位，八度之间等差，差2**23

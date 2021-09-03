@@ -8,7 +8,7 @@
 PyVogen是开源歌声合成引擎[Vogen](https://github.com/aqtq314/Vogen.Client)的python实现
 
 本python库依赖以下库：
-
+[wget](http://bitbucket.org/techtonik/python-wget/)
 [tqdm](https://tqdm.github.io/)
 [numpy](https://numpy.org/) 
 [pyworld](https://github.com/JeremyCCHsu/Python-Wrapper-for-World-Vocoder)
@@ -19,11 +19,8 @@ PyVogen是开源歌声合成引擎[Vogen](https://github.com/aqtq314/Vogen.Clien
 [more-itertools](https://more-itertools.readthedocs.io/)
 
 ## 安装
-暂未上架pypi，请自行下载，将vogen文件夹复制到python安装目录下的Lib文件夹下，或使用以下命令安装：
 ```
-git clone https://github.com/oxygen-dioxide/vogen
-cd vogen
-python setup.py install
+pip install vogen
 ```
 
 ## 示例

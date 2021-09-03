@@ -22,7 +22,7 @@ AUTHOR = 'oxygen dioxide'
 REQUIRES_PYTHON = '>=3.5.0' 
 VERSION = '0.0.4'
     
-REQUIRED = ["numpy","jyutping","pypinyin","onnxruntime","pyworld","more-itertools","tqdm"]    
+REQUIRED = ["wget","numpy","jyutping","pypinyin","onnxruntime","pyworld","more-itertools","tqdm"]    
 EXTRAS = {}
 
 # The rest you shouldn't have to touch too much :)

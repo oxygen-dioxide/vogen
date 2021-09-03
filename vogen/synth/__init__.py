@@ -49,7 +49,7 @@ def synthutt(utt:vogen.VogUtt,tempo:float):
     #print("pyworld用时：",end-start)###
     return result
 
-def synth(file:vogen.VogFile):
+def synth(file):
     """
     从工程对象合成音频，以numpy数组形式返回
     """
@@ -68,8 +68,8 @@ def synth(file:vogen.VogFile):
         #将合成出的音频加到音轨上
         uttoffset=int(params.fs*(utt.notes[0].on/(8*tempo)-0.5))
         trackwave[uttoffset:uttoffset+len(uttwave)]+=uttwave
-    
     return (trackwave*(2**15 - 1)).astype(numpy.int16)
+
 
 def synth_multithread(file:vogen.VogFile):
     """
@@ -113,7 +113,7 @@ def is_jupyter_notebook()->bool:
         #普通命令行
         return False
 
-def play(file:vogen.VogFile):
+def play(file):
     """
     从工程对象合成音频并播放
     """
@@ -125,7 +125,6 @@ def play(file:vogen.VogFile):
         import simpleaudio as sa
         sa.play_buffer(a,1,2,params.fs)
         
-
 #测试
 def main():
     global a

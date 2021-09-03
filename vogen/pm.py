@@ -46,7 +46,7 @@ def install_local(name:str,force:bool=False)->int:
         os.chdir(pkgpath)
         z.extractall()
         os.chdir(orgcwd)
-    print("已安装",pid)
+    print(pid,"安装完成")
     return 0
 
 def install_online(url:str,force:bool=False):
