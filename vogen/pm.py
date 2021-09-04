@@ -1,3 +1,5 @@
+"""PyVogen音源包管理器"""
+
 import os
 import json
 import wget
@@ -9,12 +11,13 @@ from typing import Dict,List
 pkgroot=os.path.join(os.path.split(os.path.realpath(__file__))[0],"synth","libs")
 
 #由于windows文件夹不区分大小写，而Linux区分大小写
-#为保证跨平台一致性，所有包名均转为小写
+#为保证跨平台一致性，在安装时所有包名均转为小写，调用时大小写均可
 
 def install_local(name:str,force:bool=False)->int:
     """
     安装本地音源
     name:文件路径与名称
+    force:是否强制覆盖安装
     """
     name=os.path.realpath(name)
     with zipfile.ZipFile(name, "r") as z:
@@ -50,6 +53,11 @@ def install_local(name:str,force:bool=False)->int:
     return 0
 
 def install_online(url:str,force:bool=False):
+    """
+    从url安装在线音源
+    url:音源链接
+    force:是否强制覆盖安装
+    """
     path=os.path.join(tempfile.mkdtemp(),"temp.vogeon")
     wget.download(url,path)
     install_local(path,force)
@@ -65,6 +73,10 @@ def install(name:str,force:bool=False):
         install_online(name,force)
 
 def uninstall(pid:str):
+    """
+    卸载音源
+    pid:音源包名
+    """
     pkgpath=os.path.join(pkgroot,pid)
     shutil.rmtree(pkgpath)
 
@@ -82,6 +94,7 @@ def list()->List[str]:
 def show(pid:str)->Dict[str,str]:
     """
     音源详细信息
+    pid:音源包名
     """
     return json.load(open(os.path.join(pkgroot,pid,"meta.json"),encoding="utf8"))
 

@@ -1,4 +1,6 @@
-__version__='0.0.4'
+"""PyVogen：开源开源歌声合成引擎Vogen的python实现"""
+
+__version__='0.0.5'
 
 import copy
 import json
@@ -206,8 +208,7 @@ def music21StreamToVogUtt(st)->VogUtt:
                              pitch=note.pitch.midi,
                              lyric=lyric,
                              rom=lyric))
-                             #TODO:汉字转拼音
-    return VogUtt(notes=vognote)
+    return VogUtt(notes=vognote).lyrictorom()
 
 def utaupyUstToVogUtt(u)->VogUtt:
     """
@@ -246,8 +247,7 @@ def midoMidiTrackToVogUtt(mt)->VogUtt:
                             rom=n[0]))
         elif(signal.type=="lyrics"):
             lyric=signal.text
-    #return Dvsegment(start=7680,length=int(tick*480/ticks_per_beat),note=dvnote,name=mtr.name)
-    return VogUtt(notes=vognotes)
+    return VogUtt(notes=vognotes).lyrictorom()
 
 def toVogUtt(a)->VogUtt:
     """

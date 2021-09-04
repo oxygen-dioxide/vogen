@@ -20,7 +20,7 @@ URL = 'https://github.com/oxygen-dioxide/vogen'
 EMAIL = '1463567152@qq.com'    
 AUTHOR = 'oxygen dioxide'
 REQUIRES_PYTHON = '>=3.5.0' 
-VERSION = '0.0.4'
+VERSION = '0.0.5'
     
 REQUIRED = ["wget","numpy","jyutping","pypinyin","onnxruntime","pyworld","more-itertools","tqdm"]    
 EXTRAS = {}

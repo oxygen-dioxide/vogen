@@ -1,3 +1,5 @@
+"""PyVogen命令行接口"""
+
 import vogen
 import argparse
 from typing import List
