@@ -1,6 +1,6 @@
 """PyVogen：开源开源歌声合成引擎Vogen的python实现"""
 
-__version__='0.0.5'
+__version__='0.0.6'
 
 import copy
 import json
@@ -11,7 +11,7 @@ import pypinyin
 import more_itertools
 from vogen import config
 from typing import List,Tuple,Dict,Union,Optional,Any
-from collections.abc import Callable
+from collections.abc import Callable,Iterator
 
 #导入numpy（可选）
 try:
@@ -191,6 +191,27 @@ class VogUtt():
                 note.dur=nextnote.on+nextnote.dur-note.on
                 del self.notes[length-i-1]
         return self
+
+    def getlyric(self)->List[str]:
+        """
+        获取乐句中所有音符的歌词（字符串列表）
+        """
+        return [note.lyric for note in self.notes]
+
+    def getrom(self)->List[str]:
+        """
+        获取乐句中所有音符的拼音（字符串列表）
+        """
+        return [note.rom for note in self.notes]
+
+    def setlyric(self,lyrics:Iterator[str]):
+        """
+        批量灌入歌词，并自动转换为拼音
+        lyrics：要输入的歌词，可以是字符串，也可以是字符串列表
+        """
+        for (note,lyric) in zip(self.notes,lyrics):
+            note.lyric=lyric
+        return self.lyrictorom()
 
 def music21StreamToVogUtt(st)->VogUtt:
     """
@@ -430,6 +451,36 @@ class VogFile():
 
     def toVogFile(self):
         return copy.deepcopy(self)
+
+    def notes(self):
+        """
+        工程对象中的音符迭代器
+        注意：不是按音符的时间顺序，而是按乐句在工程中的顺序和音符在乐句中的顺序
+        只有在乐句、音符按时间顺序排列（可用VogFile.sort函数排序），且没有乐句重叠时，该迭代器才按时间顺序
+        """
+        for utt in self:
+            yield from utt
+    
+    def getlyric(self)->List[str]:
+        """
+        获取工程中所有音符的歌词（字符串列表）
+        """
+        return [note.lyric for note in self.notes()]
+    
+    def getrom(self)->List[str]:
+        """
+        获取工程中所有音符的拼音（字符串列表）
+        """
+        return [note.rom for note in self.notes()]
+    
+    def setlyric(self,lyrics:Iterator[str]):
+        """
+        批量灌入歌词，并自动转换为拼音
+        lyrics：要输入的歌词，可以是字符串，也可以是字符串列表
+        """
+        for (note,lyric) in zip(self.notes(),lyrics):
+            note.lyric=lyric
+        return self.lyrictorom()   
 
 def music21StreamToVogFile(st)->VogFile:
     """

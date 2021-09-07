@@ -1,14 +1,17 @@
 """PyVogen命令行接口"""
 
+import json
 import vogen
-import argparse
 from typing import List
-	
+import argparse
+Parser=argparse.ArgumentParser
+
 def main():
 	#显示默认帮助
 	def pyvogen_default(args):
 		print("PyVogen命令行工具\n\npm 包管理器\nversion 显示版本信息\n\n可在此找到更多帮助：https://gitee.com/oxygendioxide/vogen")
-	parser = argparse.ArgumentParser(prog='pyvogen')
+	parser = Parser(prog='pyvogen')
+	#print(parser)
 	parser.set_defaults(func=pyvogen_default)
 	subparsers = parser.add_subparsers(help='sub-command help')
 	
@@ -44,9 +47,15 @@ def main():
 	#列出已安装音源
 	def pm_list(args):
 		from vogen import pm
-		print("\n".join(pm.list()))
+		pkglist=pm.list()
+		if(args.json):
+			print(json.dumps([{"name":i} for i in pkglist]))
+		else:
+			print("\n".join(pkglist))
 	parser_pm_list=subparsers_pm.add_parser("list",help="列出已安装音源")
 	parser_pm_list.set_defaults(func=pm_list)
+	parser_pm_list.add_argument("-j","--json",action='store_true',help="以json格式输出")
+
 	#卸载
 	def pm_uninstall(args):
 		from vogen import pm
@@ -59,10 +68,15 @@ def main():
 	def config(args):#输出当前设置
 		from vogen import config
 		from tabulate import tabulate
-		print(tabulate(config.config.items(),headers=["Key","Value"]))
+		if(args.json):
+			print(json.dumps(config.config))
+		else:
+			print(tabulate(config.config.items(),headers=["Key","Value"]))
 	parser_config=subparsers.add_parser("config",help="设置")
 	parser_config.set_defaults(func=config)
+	parser_config.add_argument("-j","--json",action='store_true',help="以json格式输出")
 	subparsers_config=parser_config.add_subparsers(help='')
+
 	#修改设置
 	def config_set(args):
 		from vogen import config
