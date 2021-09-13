@@ -88,8 +88,11 @@ class VogUtt():
         return VogUtt(singerId=self.singerId,romScheme=self.romScheme,notes=self.notes.copy()+other.notes.copy())
 
     def __radd__(self,other):
-        #为适配sum，规定：其他类型+VogUtt返回原VogUtt的副本
-        return copy.deepcopy(self)
+        #为适配sum，规定：0+VogUtt返回原VogUtt的副本
+        if(type(other)==int and other==0):
+            return copy.deepcopy(self)
+        else:
+            return NotImplemented
 
     def __str__(self)->str:
         return " VogUtt {} {} \n".format(self.singerId,self.romScheme)+"".join(str(n) for n in self.notes)
@@ -244,7 +247,7 @@ def utaupyUstToVogUtt(u)->VogUtt:
         time+=notelen
     return VogUtt(notes=vognotes)
 
-def midoMidiTrackToVogUtt(mt)->VogUtt:
+def midoMidiTrackToVogUtt(mt,ticks_per_beat:int=480)->VogUtt:
     """
     将mido miditrack对象转为vogen utt对象
     """
@@ -261,8 +264,8 @@ def midoMidiTrackToVogUtt(mt)->VogUtt:
             #从键位-音符字典中找到音符，并弹出
             if(signal.note in note):
                 n=note.pop(signal.note)
-                vognotes.append(VogNote(on=n[1],
-                            dur=tick-n[1],
+                vognotes.append(VogNote(on=n[1]*480//ticks_per_beat,
+                            dur=(tick-n[1])*480//ticks_per_beat,
                             pitch=signal.note,
                             lyric=n[0],
                             rom=n[0]))
@@ -319,8 +322,11 @@ class VogFile():
         return result
 
     def __radd__(self,other):
-        #为适配sum，规定：其他类型+VogUtt返回原VogUtt的副本
-        return copy.deepcopy(self)
+        #为适配sum，规定：0+VogUtt返回原VogUtt的副本
+        if(type(other)==int and other==0):
+            return copy.deepcopy(self)
+        else:
+            return NotImplemented
 
     def __str__(self):
         return "VogFile {} {}\n".format(self.timeSig0,self.bpm0)+"".join(str(utt) for utt in self.utts)
@@ -513,18 +519,26 @@ def utaupyUstToVogFile(u)->VogFile:
     """
     return VogFile(utts=[utaupyUstToVogUtt(u)],bpm0=float(u.tempo)).autosplit()
 
-def midoMidiTrackToVogFile(mt)->VogFile:
-    vu=midoMidiTrackToVogUtt(mt)
+def getTempoFromMidoMidiFile(mf)->float:
+    """从mido.MidiFile获取曲速"""
+    import mido
+    for track in mf.tracks:
+        for msg in track:
+            if(hasattr(msg,"tempo")):
+                return mido.tempo2bpm(msg.tempo)
+
+def midoMidiTrackToVogFile(mt,ticks_per_beat:int=480)->VogFile:
+    vu=midoMidiTrackToVogUtt(mt,ticks_per_beat)
     if(len(vu)>0):
         utts=[vu]
     else:
         utts=[]
     return VogFile(utts=utts).autosplit()
-    #TODO:tempo
 
 def midoMidiFileToVogFile(mf)->VogFile:
-    return sum([midoMidiTrackToVogFile(tr) for tr in mf.tracks]).sort()
-    #TODO:tempo
+    result=sum([midoMidiTrackToVogFile(tr,mf.ticks_per_beat) for tr in mf.tracks]).sort()
+    result.tempo=getTempoFromMidoMidiFile(mf)
+    return result
 
 def toVogFile(a)->VogFile:
     """
