@@ -1,6 +1,6 @@
 """PyVogen：开源开源歌声合成引擎Vogen的python实现"""
 
-__version__='0.0.6'
+__version__='0.0.7'
 
 import copy
 import json
@@ -167,7 +167,7 @@ class VogUtt():
         if(self.romScheme=="man"):#普通话
             pinyins=pypinyin.lazy_pinyin(hanzis)
         elif(self.romScheme.startswith("yue")):#粤语
-            pinyins=(i[:,-1] for i in jyutping.get(note))
+            pinyins=(i[:-1] for i in jyutping.get(hanzis))
         for (note,pinyin) in zip(hanzinotes,pinyins):
             note.rom=pinyin
         return self
@@ -215,6 +215,25 @@ class VogUtt():
         for (note,lyric) in zip(self.notes,lyrics):
             note.lyric=lyric
         return self.lyrictorom()
+
+    def transpose(self,value:int):
+        """
+        移调
+        """
+        for note in self.notes:
+            note.pitch+=value
+        return self
+
+    def copy(self):
+        """
+        将乐句复制到剪贴板，可粘贴到vogen编辑器
+        """
+        import pyperclip
+        f=copy.deepcopy(self).sort()
+        offset=f[0].on
+        for note in f:
+            note.on-=offset
+        pyperclip.copy(json.dumps({"utts":[f.dump()]}))
 
 def music21StreamToVogUtt(st)->VogUtt:
     """
@@ -415,7 +434,7 @@ class VogFile():
         """
         for utt in self.utts:
             utt.romScheme=romScheme
-        return self
+        return self.lyrictorom()
 
     def lyrictorom(self):
         """
@@ -488,6 +507,25 @@ class VogFile():
             note.lyric=lyric
         return self.lyrictorom()   
 
+    def transpose(self,value:int):
+        """
+        移调
+        """
+        for utt in self.utts:
+            utt.transpose(value)
+        return self
+
+    def copy(self):
+        """
+        将工程复制到剪贴板，可粘贴到vogen编辑器
+        """
+        import pyperclip
+        f=copy.deepcopy(self).sort()
+        offset=f[0][0].on
+        for note in f.notes():
+            note.on-=offset
+        pyperclip.copy(json.dumps(f.dump()))
+
 def music21StreamToVogFile(st)->VogFile:
     """
     将music21 stream对象转为vogen工程对象
@@ -526,6 +564,7 @@ def getTempoFromMidoMidiFile(mf)->float:
         for msg in track:
             if(hasattr(msg,"tempo")):
                 return mido.tempo2bpm(msg.tempo)
+    return 120.0
 
 def midoMidiTrackToVogFile(mt,ticks_per_beat:int=480)->VogFile:
     vu=midoMidiTrackToVogUtt(mt,ticks_per_beat)
@@ -630,6 +669,13 @@ def loadfile(filename:str)->VogFile:
             "mid":loadfile_mid,
             }
     return fileparsers[filetype](filename)
+
+def paste()->VogFile:
+    """
+    获取剪贴板中的工程片段
+    """
+    import pyperclip
+    return parsefile(json.loads(pyperclip.paste()))
 
 #关于f0格式
 #np.fromfile("utt-0.f0",dtype=np.int)

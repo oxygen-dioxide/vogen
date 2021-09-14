@@ -15,6 +15,7 @@ PyVogen是开源歌声合成引擎[Vogen](https://github.com/aqtq314/Vogen.Clien
 [jyutping](https://github.com/imdreamrunner/python-jyutping)
 [tabulate](https://github.com/astanin/python-tabulate)
 [pypinyin](https://pypinyin.readthedocs.io/zh_CN/master/)
+[pyperclip](https://github.com/asweigart/pyperclip)
 [onnxruntime](https://www.onnxruntime.ai/)
 [simpleaudio](https://github.com/hamiltron/py-simple-audio)
 [more-itertools](https://more-itertools.readthedocs.io/)

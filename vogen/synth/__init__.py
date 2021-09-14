@@ -67,7 +67,12 @@ def synth(file):
         uttwave=synthutt(utt,tempo)
         #将合成出的音频加到音轨上
         uttoffset=int(params.fs*(utt.notes[0].on/(8*tempo)-0.5))
-        trackwave[uttoffset:uttoffset+len(uttwave)]+=uttwave
+        #一般情况，utt的开头在音轨开头后面
+        if(uttoffset>=0):
+            trackwave[uttoffset:uttoffset+len(uttwave)]+=uttwave
+        #但是如果音符紧挨着音轨开头，则辅音会伸到音轨开头前面
+        else:
+            trackwave[0:uttoffset+len(uttwave)]+=uttwave[-uttoffset:]
     return (trackwave*(2**15 - 1)).astype(numpy.int16)
 
 

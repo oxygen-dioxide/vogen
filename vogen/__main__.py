@@ -106,7 +106,7 @@ def main():
 				instr=input()
 			if(instr[0] in ("n","N")):
 				return
-		wavio.write(outfile,synth.synth(vogen.openvog(infile,False)),utils.Params.fs)
+		wavio.write(outfile,synth.synth(vogen.loadfile(infile,False)),utils.Params.fs)
 		
 	parser_synth=subparsers.add_parser("synth",help="合成")
 	parser_synth.set_defaults(func=synth)
