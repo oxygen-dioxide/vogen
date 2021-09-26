@@ -75,11 +75,14 @@ class VogUtt():
     def __init__(self,
                  singerId:str=config.config["DefaultSinger"],
                  romScheme:str=config.config["DefaultRomScheme"],
-                 notes:List[VogNote]=[],
+                 notes:Optional[List[VogNote]]=None,
                  f0:Optional[numpy.ndarray]=None):
         self.singerId=singerId
         self.romScheme=romScheme
-        self.notes=notes
+        if(notes==None):
+            self.notes=[]
+        else:
+            self.notes=notes
         self.f0=f0
     
     def __add__(self,other):
@@ -162,7 +165,7 @@ class VogUtt():
             if(len(note.lyric)==1 and '\u4e00'<=note.lyric<='\u9fff'):
                 hanzis+=note.lyric
                 hanzinotes.append(note)
-            else:
+            elif(not(note.lyric=="")):#如果歌词为空则不改变rom，因为vogen gui输入拼音时歌词为空
                 note.rom=note.lyric
         if(self.romScheme=="man"):#普通话
             pinyins=pypinyin.lazy_pinyin(hanzis)
@@ -329,11 +332,14 @@ class VogFile():
                  timeSig0:str="4/4",
                  bpm0:float=120.0,
                  accomOffset:int=0,
-                 utts:List[VogUtt]=[]):
+                 utts:Optional[List[VogUtt]]=None):
         self.timeSig0=timeSig0
         self.bpm0=bpm0
         self.accomOffset=accomOffset
-        self.utts=utts
+        if(utts==None):
+            self.utts=[]
+        else:
+            self.utts=utts
 
     def __add__(self,other):
         result=copy.deepcopy(self)
@@ -579,6 +585,20 @@ def midoMidiFileToVogFile(mf)->VogFile:
     result.tempo=getTempoFromMidoMidiFile(mf)
     return result
 
+def musicpyChordToVogFile(mpychord,start_time=0)->VogFile:
+    utt=VogUtt()
+    time=start_time
+    for (note,interval) in zip(mpychord,mpychord.interval):
+        utt.notes.append(VogNote(pitch=note.degree,
+                                 on=int(time*1920),
+                                 dur=int(note.duration*1920)))
+        time+=interval
+    print(len(utt))
+    return VogFile(utts=[utt]).autosplit()
+
+def musicpyTrackToVogFile(mpytrack)->VogFile:
+    return musicpyChordToVogFile(mpytrack.content,start_time=mpytrack.start_time)
+
 def toVogFile(a)->VogFile:
     """
     将其他类型的音轨工程对象a转为vogen工程对象
@@ -592,6 +612,9 @@ def toVogFile(a)->VogFile:
         "Part":music21StreamToVogFile,#Music21多轨中的单轨对象
         "Score":music21ScoreToVogFile,#Music21多轨工程对象
         "Ust":utaupyUstToVogFile,#utaupy ust对象
+        "chord":musicpyChordToVogFile,#musicpy chord对象
+        "track":musicpyTrackToVogFile,#musicpy track对象
+        #TODO:musicpy score
     }
     #如果在这个字典中没有找到函数，则默认调用a.toVogFile()
     return type_function_dict.get(type_name,lambda x:x.toVogFile())(a)
@@ -658,7 +681,7 @@ def loadfile_mid(filename:str)->VogFile:
 def loadfile(filename:str)->VogFile:
     """
     读入文件，并转为VogFile对象
-    支持的文件类型：vog,ust,musicxml,mid
+    支持的文件类型：vog,ust,musicxml,mxl,mid
     """
     filetype=filename.split(".")[-1].lower()
     fileparsers:Dict[str,Callable[[str],VogFile]]={
